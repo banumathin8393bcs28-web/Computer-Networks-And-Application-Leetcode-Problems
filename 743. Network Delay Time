@@ -1,0 +1,110 @@
+
+struct Edge {
+    int to;
+    int weight;
+    int next;
+};
+
+struct HeapNode {
+    int vertex;
+    int dist;
+};
+
+void minHeapify(struct HeapNode* heap, int size, int idx, int* pos) {
+    int smallest = idx;
+    int left = 2 * idx + 1;
+    int right = 2 * idx + 2;
+    if (left < size && heap[left].dist < heap[smallest].dist)
+        smallest = left;
+    if (right < size && heap[right].dist < heap[smallest].dist)
+        smallest = right;
+    if (smallest != idx) {
+        pos[heap[smallest].vertex] = idx;
+        pos[heap[idx].vertex] = smallest;
+        struct HeapNode temp = heap[smallest];
+        heap[smallest] = heap[idx];
+        heap[idx] = temp;
+        minHeapify(heap, size, smallest, pos);
+    }
+}
+
+int networkDelayTime(int** times, int timesSize, int* timesColSize, int n, int k) {
+    int* head = (int*)malloc((n + 1) * sizeof(int));
+    for (int i = 0; i <= n; i++)
+        head[i] = -1;
+    struct Edge* edges = (struct Edge*)malloc(timesSize * sizeof(struct Edge));
+    for (int i = 0; i < timesSize; i++) {
+        int u = times[i][0];
+        int v = times[i][1];
+        int w = times[i][2];
+        edges[i].to = v;
+        edges[i].weight = w;
+        edges[i].next = head[u];
+        head[u] = i;
+    }
+    int* dist = (int*)malloc((n + 1) * sizeof(int));
+    int* pos = (int*)malloc((n + 1) * sizeof(int));
+    struct HeapNode* heap = (struct HeapNode*)malloc(n * sizeof(struct HeapNode));
+    for (int i = 1; i <= n; i++) {
+        dist[i] = INT_MAX;
+        heap[i - 1].vertex = i;
+        heap[i - 1].dist = INT_MAX;
+        pos[i] = i - 1;
+    }
+    dist[k] = 0;
+    heap[pos[k]].dist = 0;
+    int idx = pos[k];
+    while (idx > 0 && heap[idx].dist < heap[(idx - 1) / 2].dist) {
+        pos[heap[idx].vertex] = (idx - 1) / 2;
+        pos[heap[(idx - 1) / 2].vertex] = idx;
+        struct HeapNode temp = heap[idx];
+        heap[idx] = heap[(idx - 1) / 2];
+        heap[(idx - 1) / 2] = temp;
+        idx = (idx - 1) / 2;
+    }
+    int heapSize = n;
+    while (heapSize > 0) {
+        struct HeapNode root = heap[0];
+        int u = root.vertex;
+        pos[u] = -1;
+        heap[0] = heap[heapSize - 1];
+        if (heapSize - 1 > 0)
+            pos[heap[0].vertex] = 0;
+        heapSize--;
+        minHeapify(heap, heapSize, 0, pos);
+        if (dist[u] == INT_MAX)
+            break;
+        for (int p = head[u]; p != -1; p = edges[p].next) {
+            int v = edges[p].to;
+            int w = edges[p].weight;
+            if (pos[v] != -1 && dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                heap[pos[v]].dist = dist[v];
+                int curr = pos[v];
+                while (curr > 0 && heap[curr].dist < heap[(curr - 1) / 2].dist) {
+                    pos[heap[curr].vertex] = (curr - 1) / 2;
+                    pos[heap[(curr - 1) / 2].vertex] = curr;
+                    struct HeapNode temp = heap[curr];
+                    heap[curr] = heap[(curr - 1) / 2];
+                    heap[(curr - 1) / 2] = temp;
+                    curr = (curr - 1) / 2;
+                }
+            }
+        }
+    }
+    int maxTime = 0;
+    for (int i = 1; i <= n; i++) {
+        if (dist[i] == INT_MAX) {
+            maxTime = -1;
+            break;
+        }
+        if (dist[i] > maxTime)
+            maxTime = dist[i];
+    }
+    free(head);
+    free(edges);
+    free(dist);
+    free(pos);
+    free(heap);
+    return maxTime;
+}
