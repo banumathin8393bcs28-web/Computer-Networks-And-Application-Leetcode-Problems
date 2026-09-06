@@ -1,0 +1,43 @@
+
+
+struct Edge {
+    int to;
+    int dir;
+    int next;
+};
+
+void dfs(int node, int parent, int* head, struct Edge* edges, int* changeCount) {
+    for (int p = head[node]; p != -1; p = edges[p].next) {
+        int nextNode = edges[p].to;
+        if (nextNode == parent)
+            continue;
+        if (edges[p].dir == 1)
+            (*changeCount)++;
+        dfs(nextNode, node, head, edges, changeCount);
+    }
+}
+
+int minReorder(int n, int** connections, int connectionsSize, int* connectionsColSize) {
+    int* head = (int*)malloc(n * sizeof(int));
+    for (int i = 0; i < n; i++)
+        head[i] = -1;
+    struct Edge* edges = (struct Edge*)malloc(2 * connectionsSize * sizeof(struct Edge));
+    int edgeIdx = 0;
+    for (int i = 0; i < connectionsSize; i++) {
+        int u = connections[i][0];
+        int v = connections[i][1];
+        edges[edgeIdx].to = v;
+        edges[edgeIdx].dir = 1;
+        edges[edgeIdx].next = head[u];
+        head[u] = edgeIdx++;
+        edges[edgeIdx].to = u;
+        edges[edgeIdx].dir = 0;
+        edges[edgeIdx].next = head[v];
+        head[v] = edgeIdx++;
+    }
+    int changeCount = 0;
+    dfs(0, -1, head, edges, &changeCount);
+    free(head);
+    free(edges);
+    return changeCount;
+}
