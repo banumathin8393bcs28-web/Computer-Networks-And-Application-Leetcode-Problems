@@ -1,0 +1,99 @@
+struct HeapNode {
+    int r, c, effort;
+};
+
+void minHeapify(struct HeapNode* heap, int size, int idx, int** pos, int cols) {
+    int smallest = idx;
+    int left = 2 * idx + 1;
+    int right = 2 * idx + 2;
+    if (left < size && heap[left].effort < heap[smallest].effort)
+        smallest = left;
+    if (right < size && heap[right].effort < heap[smallest].effort)
+        smallest = right;
+    if (smallest != idx) {
+        pos[heap[smallest].r][heap[smallest].c] = idx;
+        pos[heap[idx].r][heap[idx].c] = smallest;
+        struct HeapNode temp = heap[smallest];
+        heap[smallest] = heap[idx];
+        heap[idx] = temp;
+        minHeapify(heap, size, smallest, pos, cols);
+    }
+}
+
+int minimumEffortPath(int** heights, int heightsSize, int* heightsColSize) {
+    int rows = heightsSize;
+    int cols = heightsColSize[0];
+    int** dist = (int**)malloc(rows * sizeof(int*));
+    int** pos = (int**)malloc(rows * sizeof(int*));
+    struct HeapNode* heap = (struct HeapNode*)malloc(rows * cols * sizeof(struct HeapNode));
+    int heapSize = 0;
+    for (int i = 0; i < rows; i++) {
+        dist[i] = (int*)malloc(cols * sizeof(int));
+        pos[i] = (int*)malloc(cols * sizeof(int));
+        for (int j = 0; j < cols; j++) {
+            dist[i][j] = INT_MAX;
+            heap[heapSize].r = i;
+            heap[heapSize].c = j;
+            heap[heapSize].effort = INT_MAX;
+            pos[i][j] = heapSize;
+            heapSize++;
+        }
+    }
+    dist[0][0] = 0;
+    heap[pos[0][0]].effort = 0;
+    int currIdx = pos[0][0];
+    while (currIdx > 0 && heap[currIdx].effort < heap[(currIdx - 1) / 2].effort) {
+        pos[heap[currIdx].r][heap[currIdx].c] = (currIdx - 1) / 2;
+        pos[heap[(currIdx - 1) / 2].r][heap[(currIdx - 1) / 2].c] = currIdx;
+        struct HeapNode temp = heap[currIdx];
+        heap[currIdx] = heap[(currIdx - 1) / 2];
+        heap[(currIdx - 1) / 2] = temp;
+        currIdx = (currIdx - 1) / 2;
+    }
+    int dr[] = {-1, 1, 0, 0};
+    int dc[] = {0, 0, -1, 1};
+    while (heapSize > 0) {
+        struct HeapNode root = heap[0];
+        int r = root.r;
+        int c = root.c;
+        int d = root.effort;
+        if (r == rows - 1 && c == cols - 1)
+            break;
+        pos[r][c] = -1;
+        heap[0] = heap[heapSize - 1];
+        if (heapSize - 1 > 0)
+            pos[heap[0].r][heap[0].c] = 0;
+        heapSize--;
+        minHeapify(heap, heapSize, 0, pos, cols);
+        for (int i = 0; i < 4; i++) {
+            int nr = r + dr[i];
+            int nc = c + dc[i];
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && pos[nr][nc] != -1) {
+                int diff = abs(heights[r][c] - heights[nr][nc]);
+                int maxEffort = d > diff ? d : diff;
+                if (maxEffort < dist[nr][nc]) {
+                    dist[nr][nc] = maxEffort;
+                    int idx = pos[nr][nc];
+                    heap[idx].effort = maxEffort;
+                    while (idx > 0 && heap[idx].effort < heap[(idx - 1) / 2].effort) {
+                        pos[heap[idx].r][heap[idx].c] = (idx - 1) / 2;
+                        pos[heap[(idx - 1) / 2].r][heap[(idx - 1) / 2].c] = idx;
+                        struct HeapNode temp = heap[idx];
+                        heap[idx] = heap[(idx - 1) / 2];
+                        heap[(idx - 1) / 2] = temp;
+                        idx = (idx - 1) / 2;
+                    }
+                }
+            }
+        }
+    }
+    int result = dist[rows - 1][cols - 1];
+    for (int i = 0; i < rows; i++) {
+        free(dist[i]);
+        free(pos[i]);
+    }
+    free(dist);
+    free(pos);
+    free(heap);
+    return result;
+}
