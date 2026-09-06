@@ -1,0 +1,73 @@
+#include <stdlib.h>
+
+int numBusesToDestination(int** routes, int routesSize, int* routesColSize, int source, int target) {
+    if (source == target)
+        return 0;
+    int maxStop = target > source ? target : source;
+    int total = 0;
+    for (int i = 0; i < routesSize; i++) {
+        total += routesColSize[i];
+        for (int j = 0; j < routesColSize[i]; j++) {
+            if (routes[i][j] > maxStop)
+                maxStop = routes[i][j];
+        }
+    }
+    int *head = (int *)malloc((maxStop + 1) * sizeof(int));
+    int *next = (int *)malloc(total * sizeof(int));
+    int *bus = (int *)malloc(total * sizeof(int));
+    int *visitedStop = (int *)calloc(maxStop + 1, sizeof(int));
+    int *visitedBus = (int *)calloc(routesSize, sizeof(int));
+    int *queue = (int *)malloc((total + 1) * sizeof(int));
+    for (int i = 0; i <= maxStop; i++)
+        head[i] = -1;
+    int index = 0;
+    for (int i = 0; i < routesSize; i++) {
+        for (int j = 0; j < routesColSize[i]; j++) {
+            int stop = routes[i][j];
+            bus[index] = i;
+            next[index] = head[stop];
+            head[stop] = index;
+            index++;
+        }
+    }
+    int front = 0, rear = 0;
+    queue[rear++] = source;
+    visitedStop[source] = 1;
+    int buses = 0;
+    while (front < rear) {
+        int size = rear - front;
+        buses++;
+        while (size--) {
+            int stop = queue[front++];
+            for (int p = head[stop]; p != -1; p = next[p]) {
+                int currentBus = bus[p];
+                if (visitedBus[currentBus])
+                    continue;
+                visitedBus[currentBus] = 1;
+                for (int j = 0; j < routesColSize[currentBus]; j++) {
+                    int nextStop = routes[currentBus][j];
+                    if (nextStop == target) {
+                        free(head);
+                        free(next);
+                        free(bus);
+                        free(visitedStop);
+                        free(visitedBus);
+                        free(queue);
+                        return buses;
+                    }
+                    if (!visitedStop[nextStop]) {
+                        visitedStop[nextStop] = 1;
+                        queue[rear++] = nextStop;
+                    }
+                }
+            }
+        }
+    }
+    free(head);
+    free(next);
+    free(bus);
+    free(visitedStop);
+    free(visitedBus);
+    free(queue);
+    return -1;
+}
