@@ -1,0 +1,55 @@
+
+
+int compare(const void* a, const void* b) {
+    return (*(int*)a - *(int*)b);
+}
+
+int subarrayBitwiseORs(int* arr, int arrSize) {
+    if (arrSize == 0) return 0;
+
+    int* current_set = (int*)malloc(33 * sizeof(int));
+    int* next_set = (int*)malloc(33 * sizeof(int));
+    
+    int* results = (int*)malloc(arrSize * 33 * sizeof(int));
+    
+    int current_size = 0;
+    int res_size = 0;
+
+    for (int i = 0; i < arrSize; i++) {
+        int next_size = 0;
+        
+        next_set[next_size++] = arr[i];
+        results[res_size++] = arr[i];
+
+        for (int j = 0; j < current_size; j++) {
+            int or_val = current_set[j] | arr[i];
+            
+            // Basic deduplication for the current step
+            if (or_val != next_set[next_size - 1]) {
+                next_set[next_size++] = or_val;
+                results[res_size++] = or_val;
+            }
+        }
+
+        int* temp = current_set;
+        current_set = next_set;
+        next_set = temp;
+        current_size = next_size;
+    }
+
+    
+    qsort(results, res_size, sizeof(int), compare);
+
+    int unique_count = (res_size > 0) ? 1 : 0;
+    for (int i = 1; i < res_size; i++) {
+        if (results[i] != results[i - 1]) {
+            unique_count++;
+        }
+    }
+
+    free(current_set);
+    free(next_set);
+    free(results);
+
+    return unique_count;
+}
